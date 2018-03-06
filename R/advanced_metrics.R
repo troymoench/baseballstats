@@ -48,7 +48,7 @@ linear_weights_incr <- function(.d) {
   # print(class(.d))
 
   # coerce to a tibble
-  .d <- tbl_df(as.list(.d))
+  .d <- dplyr::tbl_df(as.list(.d)) # use tibble::as_tibble() instead
   # print(.d)
   # print(class(.d))
 
@@ -60,7 +60,7 @@ linear_weights_incr <- function(.d) {
   lw_labels <- c("lw_hbp", "lw_bb", "lw_x1b", "lw_x2b", "lw_x3b", "lw_hr", "lw_sb", "lw_cs", "lw_out")
 
   v_input <- .d %>%
-    select(input_labels) %>%
+    dplyr::select(input_labels) %>%
     as.vector(mode = "integer")
 
   names(v_input) <- input_labels
@@ -95,13 +95,13 @@ linear_weights_calc <- function(.d) {
   # Calculate Linear Weights using multivariable calculus
 
   # coerce to a tibble
-  .d <- tbl_df(as.list(.d))
+  .d <- dplyr::tbl_df(as.list(.d)) # use tibble::as_tibble() instead
 
   input_labels <- c("bb", "hbp", "ab", "h", "x2b", "x3b", "hr", "sb", "cs", "sf", "sh", "gdp")
   lw_labels <- c("lw_hbp", "lw_bb", "lw_x1b", "lw_x2b", "lw_x3b", "lw_hr", "lw_sb", "lw_cs", "lw_out")
 
   v_input <- .d %>%
-    select(input_labels) %>%
+    dplyr::select(input_labels) %>%
     as.vector(mode = "integer")
 
   names(v_input) <- input_labels
@@ -117,17 +117,17 @@ woba_weights <- function(.d, target) {
   }
 
   # coerce to a tibble
-  .d <- tbl_df(as.list(.d))
+  .d <- dplyr::tbl_df(as.list(.d)) # use tibble::as_tibble() instead
 
   .d$x1b <- .d$h - .d$x2b - .d$x3b - .d$hr
 
   totals <- .d %>%
-    select(c("hbp", "bb", "x1b", "x2b", "x3b", "hr")) %>%
-    as_vector()
+    dplyr::select(c("hbp", "bb", "x1b", "x2b", "x3b", "hr")) %>%
+    purrr::as_vector()
 
   lw <- .d %>%
-    select(lw_hbp, lw_bb, lw_x1b, lw_x2b, lw_x3b, lw_hr, lw_sb, lw_cs, lw_out) %>%
-    as_vector()
+    dplyr::select(lw_hbp, lw_bb, lw_x1b, lw_x2b, lw_x3b, lw_hr, lw_sb, lw_cs, lw_out) %>%
+    purrr::as_vector()
 
   lw <- lw - lw["lw_out"] # subtract value of an out
 
