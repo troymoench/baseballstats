@@ -1,12 +1,12 @@
 library(tidyverse)
 
-source("metrics.R")
+source("R/basic_metrics.R")
 
-file <- "clean_batters_overall.csv"
+file <- "R/clean_batters_overall.csv"
 
 data <- read_csv(file)
 
-columns <- c("name", "team", "season", "pa", "ab", "h", "x2b", "x3b", "hr", 
+columns <- c("name", "team", "season", "pa", "ab", "h", "x2b", "x3b", "hr",
              "bb", "so", "hbp", "sf", "sh", "sb", "cs")
 
 data <- data %>%

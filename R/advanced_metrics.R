@@ -1,5 +1,5 @@
-library(tidyverse)
-source("utils.R")
+# library(tidyverse)
+source("R/utils.R")
 
 # *********************
 # * Advanced Metrics **
@@ -40,7 +40,7 @@ bsr_bmult <- function(.d) {
   b_act/b_est
 }
 
-linear_weights_incr <- function(.d) {
+linear_weights_incr <- function(.d, incr = .0000000001) {
 
   # Calculate Linear Weights using the increment method (plus one method)
 
@@ -48,12 +48,10 @@ linear_weights_incr <- function(.d) {
   # print(class(.d))
 
   # coerce to a tibble
-  .d <- dplyr::tbl_df(as.list(.d)) # use tibble::as_tibble() instead
+  .d <- dplyr::as_tibble(as.list(.d)) # use tibble::as_tibble() instead
   # print(.d)
   # print(class(.d))
 
-
-  incr <- 0.00000001
 
   # .d$x1b <- .d$h - .d$x2b - .d$x3b - .d$hr
   input_labels <- c("bb", "hbp", "ab", "h", "x2b", "x3b", "hr", "sb", "cs", "sf", "sh", "gdp")
@@ -77,6 +75,7 @@ linear_weights_incr <- function(.d) {
     c(0,0,0,0,0,0,0,0,incr,0,0,0), # cs
     c(0,0,incr,0,0,0,0,0,0,0,0,0) # out
   ), nrow = length(input_labels))
+
 
   # print(M_incr)
   M_input <- M_incr + v_input
@@ -106,7 +105,29 @@ linear_weights_calc <- function(.d) {
 
   names(v_input) <- input_labels
 
-  # TODO: Finish
+  x1b <- .d$h - .d$x2b - .d$x3b - .d$hr
+
+  A <- .d$h + .d$bb + .d$hbp - .d$hr - .d$cs - .d$gdp
+  B <- .777*x1b + 2.61*.d$x2b + 4.29*.d$x3b + 2.43*.d$hr + 0.03*(.d$bb + .d$hbp) +
+    1.30*.d$sb + .13*.d$cs + 1.08*.d$sh + 1.81*.d$sf + 0.70*.d$gdp - 0.04*(.d$ab - .d$h)
+  C <- .d$ab - .d$h + .d$sh + .d$sf
+  D <- .d$hr
+
+  B <- B*bsr_bmult(.d)
+
+  lw_hbp <- ((.03*A + B) / (B + C)) - (.03*A*B/(B + C)^2)
+  lw_bb <- ((.03*A + B) / (B + C)) - (.03*A*B/(B + C)^2)
+  lw_x1b <- ((.777*A + B) / (B + C)) - (.777*A*B/(B + C)^2)
+  lw_x2b <- ((2.61*A + B) / (B + C)) - (2.61*A*B/(B + C)^2)
+  lw_x3b <- ((4.29*A + B) / (B + C)) - (4.29*A*B/(B + C)^2)
+  lw_hr <- ((2.43*A) / (B + C)) - (2.43*A*B/(B + C)^2) + 1
+  lw_sb <- ((1.3*A) / (B + C)) - (1.3*A*B/(B + C)^2)
+  lw_cs <- ((.13*A - B) / (B + C)) - (.13*A*B/(B + C)^2)
+  lw_out <- ((-.04*A) / (B + C)) - (.96*A*B/(B + C)^2)
+
+  lw <- c(lw_hbp, lw_bb, lw_x1b, lw_x2b, lw_x3b, lw_hr, lw_sb, lw_cs, lw_out)
+  names(lw) <- lw_labels
+  lw
 }
 
 woba_weights <- function(.d, target) {
