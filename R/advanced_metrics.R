@@ -40,7 +40,7 @@ bsr_bmult <- function(.d) {
   b_act/b_est
 }
 
-linear_weights_incr <- function(.d, incr = .0000000001) {
+linear_weights_incr <- function(.d, incr = 0.00000001) {
 
   # Calculate Linear Weights using the increment method (plus one method)
 
@@ -48,7 +48,7 @@ linear_weights_incr <- function(.d, incr = .0000000001) {
   # print(class(.d))
 
   # coerce to a tibble
-  .d <- dplyr::as_tibble(as.list(.d)) # use tibble::as_tibble() instead
+  .d <- dplyr::as_tibble(as.list(.d))
   # print(.d)
   # print(class(.d))
 
@@ -94,7 +94,7 @@ linear_weights_calc <- function(.d) {
   # Calculate Linear Weights using multivariable calculus
 
   # coerce to a tibble
-  .d <- dplyr::tbl_df(as.list(.d)) # use tibble::as_tibble() instead
+  .d <- dplyr::as_tibble(as.list(.d))
 
   input_labels <- c("bb", "hbp", "ab", "h", "x2b", "x3b", "hr", "sb", "cs", "sf", "sh", "gdp")
   lw_labels <- c("lw_hbp", "lw_bb", "lw_x1b", "lw_x2b", "lw_x3b", "lw_hr", "lw_sb", "lw_cs", "lw_out")
@@ -138,7 +138,7 @@ woba_weights <- function(.d, target) {
   }
 
   # coerce to a tibble
-  .d <- dplyr::tbl_df(as.list(.d)) # use tibble::as_tibble() instead
+  .d <- dplyr::as_tibble(as.list(.d))
 
   .d$x1b <- .d$h - .d$x2b - .d$x3b - .d$hr
 
@@ -155,17 +155,50 @@ woba_weights <- function(.d, target) {
   drop <- c("lw_sb", "lw_cs", "lw_out")
   lw <- lw[setdiff(names(lw), drop)] # remove elements from named vector
 
-
-  acc <- dot(lw, totals)
+  acc <- dot(lw, totals) # dot product
 
   raw <- acc / .d$pa
   scale <- target / raw
-  ww <- lw * scale
-  names(ww) <- c("ww_hbp", "ww_bb", "ww_x1b", "ww_x2b", "ww_x3b", "ww_hr")
+  ww <- c(lw * scale, scale)
+  names(ww) <- c("ww_hbp", "ww_bb", "ww_x1b", "ww_x2b", "ww_x3b", "ww_hr", "woba_scale")
   ww
 }
 
 woba <- function(.d, .w) {
+
+  # coerce to a tibble
+  .d <- dplyr::as_tibble(as.list(.d))
+  .w <- dplyr::as_tibble(as.list(.w))
+
   .d$x1b <- .d$h - .d$x2b - .d$x3b - .d$hr
-  (.w["ww_hbp"]*.d$hbp + .w["ww_bb"]*.d$bb + .w["ww_x1b"]*.d$x1b + .w["ww_x2b"]*.d$x2b + .w["ww_x3b"]*.d$x3b + .w["ww_hr"]*.d$hr) / .d$pa
+  (.w$ww_hbp*.d$hbp + .w$ww_bb*.d$bb + .w$ww_x1b*.d$x1b + .w$ww_x2b*.d$x2b + .w$ww_x3b*.d$x3b + .w$ww_hr*.d$hr) / .d$pa
+}
+
+sbr <- function(.d, lw) {
+  # coerce to a tibble
+  # .d <- dplyr::as_tibble(as.list(.d))
+  lw <- dplyr::as_tibble(as.list(lw))
+
+  lw$lw_sb * .d$sb + lw$lw_cs * .d$cs
+}
+
+lg_wsb <- function(.d, lw) {
+  # lgwSB = (SB * runSB + CS * runCS) / (1B + BB + HBP – IBB)
+
+  # coerce to a tibble
+  # .d <- dplyr::as_tibble(as.list(.d))
+  lw <- dplyr::as_tibble(as.list(lw))
+
+  .d$x1b <- .d$h - .d$x2b - .d$x3b - .d$hr
+
+  (.d$sb * lw$lw_sb + .d$cs * lw$lw_cs) / (.d$x1b + .d$bb + .d$hbp)
+}
+
+wsb <- function(.d, lg_wsb) {
+  # wSB = (SB * runSB) + (CS * runCS) – (lgwSB * (1B + BB + HBP – IBB)) OR
+  # wSB = SBR - (lgwSB * (1B + BB + HBP – IBB))
+
+  .d$x1b <- .d$h - .d$x2b - .d$x3b - .d$hr
+
+  .d$sbr - lg_wsb * (.d$x1b + .d$bb + .d$hbp)
 }

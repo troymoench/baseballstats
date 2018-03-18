@@ -1,7 +1,8 @@
 # This script calculates the league metrics and constants for each season
 # output to csv or database
 
-# TODO: Add woba, basic metrics, and export data to csv or database
+# TODO: Add wRAA, wRC+, OFF, OFF+, replacement level (OFF/PA), RAR
+# TODO: Export data to csv or database
 
 library(tidyverse)
 
@@ -28,6 +29,8 @@ totals <- data %>%
 totals
 
 get_lw <- function(league_totals, incr = TRUE, bind = TRUE) {
+  # calculate linear weights from league totals
+
   if (incr) {
     lw <- league_totals %>%
       apply(1, linear_weights_incr) %>%
@@ -69,10 +72,37 @@ totals %>%
   get_lw(bind = FALSE)
 
 
-get_ww(totals)
+get_ww(totals, incr = TRUE, bind = FALSE)
+get_ww(totals, incr = FALSE, bind = FALSE)
+
 totals %>%
+  filter(season == 2017) %>%
   get_ww() %>%
-  select(season, lw_hbp:ww_hr)
+  select(season, obp, lw_hbp:woba_scale)
+
+weights17 <- totals %>%
+  filter(season == 2017) %>%
+  get_ww() %>%
+  select(lw_hbp:woba_scale)
+weights17
+
+totals %>%
+  filter(season == 2017) %>%
+  mutate(woba = woba(., weights17)) %>%
+  mutate(sbr = sbr(., weights17)) %>%
+  mutate(lg_wsb = lg_wsb(., weights17)) %>%
+  mutate(wsb = wsb(., lg_wsb))
+
+
+weights <- totals %>%
+  get_ww() %>%
+  select(lw_hbp:woba_scale)
+weights
+totals %>%
+  mutate(woba = woba(., weights)) %>%
+  mutate(sbr = sbr(., weights)) %>%
+  mutate(lg_wsb = lg_wsb(., weights)) %>%
+  mutate(wsb = wsb(., lg_wsb))
 
 
 
@@ -94,4 +124,8 @@ mlb
 get_lw(mlb)
 mlb %>%
   get_ww(incr = FALSE) %>%
-  select(lw_hbp:ww_hr)
+  select(ww_hbp:woba_scale)
+
+mlb %>%
+  get_ww(incr = TRUE) %>%
+  select(ww_hbp:woba_scale)
